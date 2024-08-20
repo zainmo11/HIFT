@@ -1,4 +1,4 @@
-# todo : use one of models that are at papper
+# todo : use one of models that are in papper
 
 
-( SiamCAR - SiamBAN - SiamRPN++_Res)
+## ( SiamCAR - SiamBAN - SiamRPN++_Res)
