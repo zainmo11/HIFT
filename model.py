@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Conv2d, Linear, LayerNorm, Dropout, MultiheadAttention
-
+import math
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, embed_size, heads):
