@@ -1,44 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import Conv2d, Linear, LayerNorm, Dropout, MultiheadAttention
+from torch.nn import Conv2d, Linear, Dropout, MultiheadAttention, GroupNorm
 import math
-
-class MultiHeadAttention(nn.Module):
-    def __init__(self, embed_size, heads):
-        super(MultiHeadAttention, self).__init__()
-        self.embed_size = embed_size
-        self.heads = heads
-        self.head_dim = embed_size // heads
-
-        assert (
-                self.head_dim * heads == embed_size
-        ), "Embedding size needs to be divisible by heads"
-
-        self.values = nn.Linear(self.head_dim, self.head_dim, bias=False)
-        self.keys = nn.Linear(self.head_dim, self.head_dim, bias=False)
-        self.queries = nn.Linear(self.head_dim, self.head_dim, bias=False)
-        self.fc_out = nn.Linear(heads * self.head_dim, embed_size)
-
-    def forward(self, values, keys, query):
-        N = query.shape[0]
-        value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1]
-
-        values = values.reshape(N, value_len, self.heads, self.head_dim)
-        keys = keys.reshape(N, key_len, self.heads, self.head_dim)
-        queries = query.reshape(N, query_len, self.heads, self.head_dim)
-
-        energy = torch.einsum("nqhd,nkhd->nhqk", [queries, keys])
-        scaling_factor = math.sqrt(self.head_dim)
-        attention = torch.nn.functional.softmax(energy / scaling_factor, dim=3)
-
-        out = torch.einsum("nhql,nlhd->nqhd", [attention, values]).reshape(
-            N, query_len, self.heads * self.head_dim
-        )
-
-        out = self.fc_out(out)
-        return out
-
 
 class FeatureExtractor(nn.Module):
     def __init__(self):
@@ -61,7 +25,7 @@ class FeatureEncoder(nn.Module):
         self.conv = Conv2d(in_channels, out_channels, kernel_size=1)
         self.positional_encoding = nn.Parameter(torch.randn(1, out_channels, 1, 1))
         self.multihead_attn = MultiheadAttention(embed_dim=out_channels, num_heads=num_heads)
-        self.norm = LayerNorm(out_channels)
+        self.norm = GroupNorm(8, out_channels)  # Using GroupNorm for 4D tensors
 
     def forward(self, x1, x2):
         # Convolution and positional encoding
@@ -88,8 +52,8 @@ class FeatureDecoder(nn.Module):
     def __init__(self, in_channels, num_heads=8):
         super(FeatureDecoder, self).__init__()
         self.multihead_attn = MultiheadAttention(embed_dim=in_channels, num_heads=num_heads)
-        self.norm1 = LayerNorm(in_channels)
-        self.norm2 = LayerNorm(in_channels)
+        self.norm1 = GroupNorm(8, in_channels)  # Use GroupNorm for 4D tensors
+        self.norm2 = GroupNorm(8, in_channels)
         self.ffn = nn.Sequential(
             Linear(in_channels, in_channels * 4),
             nn.ReLU(),
@@ -112,7 +76,6 @@ class FeatureDecoder(nn.Module):
         x = self.norm2(x)
 
         return x
-
 
 
 class ClassificationAndRegression(nn.Module):
@@ -153,6 +116,17 @@ class HiFT(nn.Module):
         self.feature_decoder = FeatureDecoder(in_channels=256)
         self.classification_and_regression = ClassificationAndRegression(in_channels=256)
 
+        # Convolution layer for concatenated feature maps
+        self.concat_conv = nn.Conv2d(256 * 2, 256, kernel_size=1)
+
+    def concatenate_and_conv(self, z, x):
+        # Concatenate feature maps along the channel dimension
+        concatenated = torch.cat((z, x), dim=1)  # Concatenate along channel dimension (dim=1)
+
+        # Apply convolution to the concatenated features
+        fused = self.concat_conv(concatenated)
+        return fused
+
     def forward(self, z, x):
         # Feature extraction
         z_features = self.feature_extractor(z)
@@ -166,10 +140,11 @@ class HiFT(nn.Module):
             # Apply Modulation Layer after the first Add & Norm and FFN layers
             modulated = self.modulation_layer(encoded)
 
-            # Process with the concatenation and convolution (if applicable in your design)
-            modulated = self.concatenate_and_conv(modulated)
+            # Process with the concatenation and convolution
+            fused_features = self.concatenate_and_conv(z_features[i], x_features[i])
 
-            decoded = self.feature_decoder(modulated)
+            # Apply feature decoding after concatenation and convolution
+            decoded = self.feature_decoder(fused_features)
             encoded_features.append(decoded)
 
         # Sum the transformed features
