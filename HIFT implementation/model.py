@@ -129,7 +129,7 @@ class HiFT(nn.Module):
 
 def train(model, dataloader, epochs, device):
     model = model.to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=5e-4, momentum=0.9, weight_decay=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     criterion_cls = nn.MSELoss()
     criterion_reg = nn.SmoothL1Loss()
 
@@ -158,19 +158,60 @@ def train(model, dataloader, epochs, device):
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}")
 
 
+from torch.utils.data import random_split
+
+
+def validate(model, dataloader, device):
+    model.eval()
+    criterion_cls = nn.MSELoss()
+    criterion_reg = nn.SmoothL1Loss()
+
+    total_loss = 0.0
+    with torch.no_grad():
+        for i, (template, search, cls_label, reg_label) in enumerate(dataloader):
+            template, search = template.to(device), search.to(device)
+            cls_label = cls_label.float().to(device)
+            reg_label = reg_label.to(device)
+
+            cls_output, reg_output = model(template, search)
+
+            # Resizing labels to match outputs
+            cls_label_resized = F.interpolate(cls_label, size=cls_output.shape[2:], mode='nearest')
+            reg_label_resized = F.interpolate(reg_label, size=reg_output.shape[2:], mode='nearest')
+
+            loss_cls = criterion_cls(cls_output, cls_label_resized)
+            loss_reg = criterion_reg(reg_output, reg_label_resized)
+            total_loss += loss_cls.item() + loss_reg.item()
+
+    avg_loss = total_loss / len(dataloader)
+    print(f"Validation Loss: {avg_loss:.4f}")
+
+
 # Example usage
 if __name__ == "__main__":
     # Create dummy data
     batch_size = 4
-    template = torch.randn(batch_size, 3, 224, 224)
-    search = torch.randn(batch_size, 3, 224, 224)
-    cls_label = torch.randint(0, 2, (batch_size, 2, 1, 1))
-    reg_label = torch.randn(batch_size, 4, 1, 1)
+    template = torch.randn(100, 3, 224, 224)  # 100 examples
+    search = torch.randn(100, 3, 224, 224)
+    cls_label = torch.randint(0, 2, (100, 2, 1, 1))
+    reg_label = torch.randn(100, 4, 1, 1)
 
+    # Create dataset
     dataset = TensorDataset(template, search, cls_label, reg_label)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    # Initialize model and train
+    # Split the dataset into training and validation sets (80% train, 20% validation)
+    train_size = int(0.8 * len(dataset))
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+
+    # Create dataloaders for training and validation
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+
+    # Initialize model
     model = HiFT()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train(model, dataloader, epochs=10, device=device)
+
+    # Train and validate the model
+    train(model, train_dataloader, epochs=10, device=device)
+    validate(model, val_dataloader, device=device)
