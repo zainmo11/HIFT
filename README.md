@@ -63,7 +63,11 @@ The design choices in the HiFT implementation aim to leverage the strengths of b
 
 ## Training and Validation
 
-Surprisingly, our model gave a really fast conversion rat during training
+In the beginning, to make sure our code works, we created some dummy data tensors to train the model. While the dummy data does not consist of any important learnable data and is pretty much noise, the model gave a reasonable loss that did not converge well
+
+![image](https://github.com/user-attachments/assets/defbcede-1acb-4de0-902e-9fbb8a2718aa)
+
+Surprisingly, our model gave a really fast conversion rate during training
 
 ![image](https://github.com/user-attachments/assets/5dcc72a9-08eb-4deb-8790-d867e67d2d86)
 
