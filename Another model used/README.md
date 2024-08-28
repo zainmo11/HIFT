@@ -1,7 +1,7 @@
 # SiamBAN Network Video Inference
 
 This repository contains code for performing real-time video inference using a SiamBAN network. The provided example showcases how to integrate a SiamBAN model with video capture to make predictions on individual frames.
-
+<div align="center">
 <table>
     <tr>
         <td colspan="2" align=center> Dataset</td>
@@ -52,6 +52,8 @@ This repository contains code for performing real-time video inference using a S
         <td>44.1</td>
     </tr>
 </table>
+</div>
+
 ## Overview
 
 The SiamBAN network is a placeholder model for demonstration purposes. You should replace the provided network architecture with the actual SiamBAN implementation. This code demonstrates how to:
