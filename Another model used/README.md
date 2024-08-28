@@ -2,6 +2,56 @@
 
 This repository contains code for performing real-time video inference using a SiamBAN network. The provided example showcases how to integrate a SiamBAN model with video capture to make predictions on individual frames.
 
+<table>
+    <tr>
+        <td colspan="2" align=center> Dataset</td>
+        <td align=center>SiamCAR</td>
+    </tr>
+    <tr>
+        <td rowspan="2" align=center>OTB100</td>
+        <td>Success</td>
+        <td>70.0</td>
+    </tr>
+    <tr>
+        <td>Precision</td>
+        <td>91.4</td>
+    </tr>
+    <tr>
+        <td rowspan="2" align=center>UAV123</td>
+        <td>Success</td>
+        <td>64.0</td>
+    </tr>
+    <tr>
+        <td>Precision</td>
+        <td>83.9</td>
+    </tr>
+    <tr>
+        <td rowspan="3" align=center>LaSOT</td>
+        <td>Success</td>
+        <td>51.6</td>
+    </tr>
+    <tr>
+        <td>Norm precision</td>
+        <td>61.0</td>
+    </tr>
+    <tr>
+        <td>Precision</td>
+        <td>52.4</td>
+    </tr>
+    <tr>
+        <td rowspan="3" align=center>GOT10k</td>
+        <td>AO</td>
+        <td>58.1</td>
+    </tr>
+    <tr>
+        <td>SR0.5</td>
+        <td>68.3</td>
+    </tr>
+    <tr>
+        <td>SR0.75</td>
+        <td>44.1</td>
+    </tr>
+</table>
 ## Overview
 
 The SiamBAN network is a placeholder model for demonstration purposes. You should replace the provided network architecture with the actual SiamBAN implementation. This code demonstrates how to:
