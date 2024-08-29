@@ -3,7 +3,6 @@ import torch.nn as nn
 import cv2
 from torchvision import transforms
 
-# Example SiamBAN Network (Replace with the actual SiamBAN implementation)
 class SiamBANNetwork(nn.Module):
     def __init__(self):
         super(SiamBANNetwork, self).__init__()
