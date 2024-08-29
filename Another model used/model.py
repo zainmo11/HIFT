@@ -12,7 +12,7 @@ class SiamBANNetwork(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
-        self.fc = nn.Linear(64 * 64 * 64, 10)  # Adjust dimensions and output classes as needed
+        self.fc = nn.Linear(64 * 64 * 64, 10) 
 
     def forward(self, x):
         x = self.backbone(x)
